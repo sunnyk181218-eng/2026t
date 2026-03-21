@@ -17,7 +17,7 @@
             color: #f8fafc;
             font-family: 'Jua', sans-serif;
             overflow: hidden;
-            touch-action: none;
+            touch-action: none; 
             user-select: none;
         }
 
@@ -26,18 +26,19 @@
         }
 
         #game-canvas {
-            border: 6px solid #1e293b;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 4px solid #334155;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
             background: #1e293b;
             display: block;
+            margin: 0 auto;
         }
 
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
+            border-radius: 12px;
         }
 
         .char-btn {
@@ -45,102 +46,99 @@
             cursor: pointer;
             aspect-ratio: 1/1;
             border: 2px solid transparent;
+            font-size: 1.2rem;
         }
-        .char-btn:hover { transform: translateY(-2px); }
         .char-btn.active { 
             background: #ec4899; 
             border-color: #fce7f3;
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+            transform: scale(1.1);
         }
 
-        .ctrl-btn:active {
-            transform: scale(0.95);
-            background-color: rgba(255, 255, 255, 0.1);
+        /* 모바일 컨트롤 버튼 시각적 강화 */
+        .ctrl-btn {
+            transition: all 0.1s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+        .ctrl-btn:active {
+            transform: translateY(2px);
+            filter: brightness(1.2);
+        }
+
+        /* 버튼 그룹 구분 */
+        .move-btn { background-color: #334155; color: white; }
+        .rotate-btn { background-color: #db2777; color: white; }
+        .drop-btn { background: linear-gradient(135deg, #0891b2, #2563eb); color: white; }
+        
     </style>
 </head>
-<body class="flex flex-col items-center min-h-screen p-2 md:p-4">
+<body class="flex flex-col items-center justify-start min-h-screen p-2">
 
-    <!-- Header: 요청에 따라 작고 단색으로 수정 -->
-    <header class="text-center mb-6 w-full">
-        <p class="text-slate-500 text-[11px] font-medium tracking-tight">
+    <header class="text-center mt-1 mb-2 w-full">
+        <p class="text-slate-500 text-[10px] font-medium tracking-tight">
             자연과생명의 공존 느티나무-sunny
         </p>
     </header>
 
-    <div class="flex flex-col lg:flex-row gap-4 items-center lg:items-start justify-center w-full max-w-4xl">
+    <div class="flex flex-col items-center w-full max-w-md">
         
-        <!-- Stats -->
-        <div class="flex flex-row lg:flex-col gap-2 w-full lg:w-32 order-2 lg:order-1">
-            <div class="glass-panel p-2 flex-1 text-center">
-                <p class="text-[9px] text-slate-500 uppercase mb-1">Score</p>
-                <p id="score-val" class="text-lg font-bold text-cyan-400 title-font">0</p>
+        <!-- Score & Next -->
+        <div class="flex justify-between w-full mb-2 px-1">
+            <div class="glass-panel px-3 py-1 flex items-center gap-2">
+                <span class="text-[9px] text-slate-400 uppercase">Score</span>
+                <span id="score-val" class="text-cyan-400 font-bold title-font text-sm">0</span>
             </div>
-            <div class="glass-panel p-2 flex-1 text-center">
-                <p class="text-[9px] text-slate-500 uppercase mb-1">Level</p>
-                <select id="level-select" class="bg-transparent text-pink-400 font-bold text-sm outline-none w-full text-center">
-                    <option value="1">Lvl 1</option>
-                    <option value="3">Lvl 3</option>
-                    <option value="5">Lvl 5</option>
-                    <option value="7">Lvl 7</option>
-                    <option value="10">Lvl 10</option>
-                </select>
+            <div class="glass-panel px-3 py-1 flex items-center gap-2">
+                <span class="text-[9px] text-slate-400 uppercase">Next</span>
+                <canvas id="next-canvas" width="30" height="30"></canvas>
             </div>
         </div>
 
-        <!-- Main Canvas -->
-        <div class="relative order-1 lg:order-2">
+        <!-- Game Area -->
+        <div class="relative w-full flex justify-center">
             <canvas id="game-canvas"></canvas>
             
-            <!-- Start Overlay -->
-            <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center glass-panel bg-slate-900/95 z-20 p-6">
-                <h1 class="text-3xl font-black mb-2 title-font text-white tracking-tighter">DICE TRIS</h1>
-                <p class="text-slate-400 text-xs mb-4">Choose your dice character</p>
-                
-                <div class="grid grid-cols-5 gap-2 mb-6" id="char-grid"></div>
-                
-                <button id="start-btn" class="w-full py-3 bg-white text-slate-900 rounded-xl font-bold text-sm hover:bg-cyan-400 transition-colors">
+            <!-- Overlay -->
+            <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center glass-panel bg-slate-900/95 z-20 mx-auto w-full h-full">
+                <h1 class="text-2xl font-black mb-1 title-font text-white">DICE TRIS</h1>
+                <p class="text-slate-400 text-[10px] mb-3">Choose Dice Character</p>
+                <div class="grid grid-cols-5 gap-1.5 mb-5 px-4" id="char-grid"></div>
+                <button id="start-btn" class="px-10 py-3 bg-cyan-500 text-white rounded-full font-bold text-sm shadow-lg active:scale-95 transition-transform">
                     START PLAYING
                 </button>
             </div>
-
-            <div id="pause-overlay" class="hidden absolute inset-0 flex items-center justify-center glass-panel bg-slate-900/40 z-10">
-                <p class="text-2xl font-bold text-white">PAUSED</p>
-            </div>
         </div>
 
-        <!-- Next & Info -->
-        <div class="flex flex-row lg:flex-col gap-2 w-full lg:w-32 order-3">
-            <div class="glass-panel p-3 flex-1 flex flex-col items-center justify-center min-h-[100px]">
-                <p class="text-[9px] text-slate-500 uppercase mb-2">Next</p>
-                <canvas id="next-canvas" width="60" height="60"></canvas>
+        <!-- 모바일 컨트롤러: 좌우 이동 및 기능 버튼 재배치 -->
+        <div class="w-full mt-4 flex gap-3 px-1">
+            <!-- 왼쪽: 이동 컨트롤 (십자형 배치 느낌) -->
+            <div class="grid grid-cols-2 gap-2 flex-1">
+                <button id="ctrl-left" class="ctrl-btn move-btn h-16 rounded-xl">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button id="ctrl-right" class="ctrl-btn move-btn h-16 rounded-xl">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button id="ctrl-down" class="ctrl-btn move-btn h-16 col-span-2 rounded-xl">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
             </div>
-            <div class="hidden lg:block glass-panel p-3 flex-1 text-[10px] text-slate-400">
-                <p class="text-white mb-1">KEYS</p>
-                <p>Arrows: Move</p>
-                <p>Space: Drop</p>
+
+            <!-- 오른쪽: 기능 컨트롤 (회전 및 드롭) -->
+            <div class="flex flex-col gap-2 w-32">
+                <button id="ctrl-rotate" class="ctrl-btn rotate-btn h-16 rounded-xl">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button id="ctrl-drop" class="ctrl-btn drop-btn h-16 rounded-xl font-bold flex flex-col">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 11l5 5 5-5M17 7l-5 5-5-5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="text-[9px]">HARD DROP</span>
+                </button>
             </div>
         </div>
-    </div>
-
-    <!-- Mobile Controls -->
-    <div class="grid grid-cols-3 gap-2 mt-4 lg:hidden w-full max-w-xs px-2 order-4">
-        <button id="ctrl-left" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2"/></svg>
-        </button>
-        <button id="ctrl-rotate" class="ctrl-btn h-12 glass-panel flex justify-center items-center bg-white/5">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2"/></svg>
-        </button>
-        <button id="ctrl-right" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2"/></svg>
-        </button>
-        <button id="ctrl-down" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2"/></svg>
-        </button>
-        <button id="ctrl-drop" class="ctrl-btn col-span-2 h-12 bg-white text-slate-900 rounded-xl font-bold text-xs uppercase tracking-tighter">
-            HARD DROP
-        </button>
     </div>
 
     <script>
@@ -149,17 +147,7 @@
         const CHARACTERS = ["😊", "⭐", "🔥", "💎", "🍀", "👻", "🍎", "⚡", "👑", "⚽"];
         let selectedChar = CHARACTERS[0];
 
-        const COLORS = [
-            null,
-            '#ef4444', // Red
-            '#3b82f6', // Blue
-            '#10b981', // Green
-            '#f59e0b', // Yellow
-            '#8b5cf6', // Purple
-            '#ec4899', // Pink
-            '#06b6d4'  // Cyan
-        ];
-
+        const COLORS = [null, '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
         const SHAPES = [
             [],
             [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
@@ -178,159 +166,96 @@
         
         let grid = [];
         let score = 0;
-        let level = 1;
-        let gameOver = false;
-        let isPaused = false;
-        let dropInterval = 1000;
-        let dropCounter = 0;
+        let gameOver = true;
         let lastTime = 0;
+        let dropCounter = 0;
+        let dropInterval = 1000;
         let requestId = null;
-
         let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
 
-        // UI 설정
+        // Character Selection
         const charGrid = document.getElementById('char-grid');
         CHARACTERS.forEach((char, idx) => {
             const btn = document.createElement('div');
-            btn.className = `char-btn glass-panel flex items-center justify-center text-lg ${idx === 0 ? 'active' : ''}`;
+            btn.className = `char-btn glass-panel flex items-center justify-center ${idx === 0 ? 'active' : ''}`;
             btn.innerText = char;
             btn.onclick = () => {
                 document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedChar = char;
+                if(!gameOver) draw();
             };
             charGrid.appendChild(btn);
         });
 
         function resize() {
-            const containerHeight = window.innerHeight * 0.6;
-            const blockSize = Math.floor(containerHeight / ROWS);
+            const screenW = window.innerWidth;
+            const screenH = window.innerHeight;
+            // 모바일 컨트롤러 높이(약 160px)와 상단 여백 고려
+            const availableH = screenH - 280;
+            const availableW = screenW - 32;
+            const blockSize = Math.min(Math.floor(availableW / COLS), Math.floor(availableH / ROWS), 28);
+            
             canvas.width = blockSize * COLS;
             canvas.height = blockSize * ROWS;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(blockSize, blockSize);
-            nextCtx.setTransform(1,0,0,1,0,0);
-            nextCtx.scale(15, 15);
+            
+            nextCtx.setTransform(1, 0, 0, 1, 0, 0);
+            nextCtx.scale(blockSize/2.5, blockSize/2.5);
         }
 
         window.addEventListener('resize', resize);
         resize();
 
-        // [주사위 스타일 블록 드로잉 함수]
         function drawDiceBlock(context, x, y, colorIndex, isGhost = false) {
             const color = COLORS[colorIndex];
-            const scale = 0.9;
-            const pad = 0.05;
-            const corner = 0.15;
+            const s = 0.9;
+            const p = 0.05;
+            const r = 0.15;
 
             context.save();
-            context.translate(x + pad, y + pad);
+            context.translate(x + p, y + p);
 
             if (isGhost) {
-                context.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                context.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                 context.lineWidth = 0.05;
-                context.strokeRect(0, 0, scale, scale);
+                context.strokeRect(0, 0, s, s);
             } else {
-                // 1. 입체적 측면 (Shadow Side)
-                context.fillStyle = shadeColor(color, -30);
+                // Side
+                context.fillStyle = shadeColor(color, -25);
                 context.beginPath();
-                context.moveTo(scale, corner);
-                context.lineTo(scale, scale - corner);
-                context.quadraticCurveTo(scale, scale, scale - corner, scale);
-                context.lineTo(corner, scale);
-                context.lineTo(0.1, 0.85); // 가상의 깊이감
-                context.lineTo(0.85, 0.85);
-                context.lineTo(0.85, 0.1);
+                context.roundRect(0.05, 0.05, s, s, r);
                 context.fill();
 
-                // 2. 메인 앞면 (Front Face)
+                // Face
                 context.fillStyle = color;
-                context.strokeStyle = '#000000';
-                context.lineWidth = 0.04;
-
-                const frontSize = 0.85;
+                context.strokeStyle = 'rgba(0,0,0,0.2)';
+                context.lineWidth = 0.02;
                 context.beginPath();
-                context.roundRect(0, 0, frontSize, frontSize, corner);
+                context.roundRect(0, 0, s-0.05, s-0.05, r);
                 context.fill();
                 context.stroke();
 
-                // 3. 하이라이트 (Top Light)
-                context.beginPath();
-                context.roundRect(0.05, 0.05, frontSize - 0.1, 0.1, corner / 2);
-                context.fillStyle = 'rgba(255,255,255,0.2)';
-                context.fill();
-
-                // 4. 캐릭터 (정면 중앙)
-                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                context.font = '0.45px Jua';
+                // Icon
+                context.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                context.font = '0.45px Arial';
                 context.textAlign = 'center';
                 context.textBaseline = 'middle';
-                context.fillText(selectedChar, frontSize/2, frontSize/2 + 0.05);
+                context.fillText(selectedChar, (s-0.05)/2, (s-0.05)/2 + 0.03);
             }
             context.restore();
-        }
-
-        // 구형 브라우저를 위한 roundRect 폴리필
-        if (!CanvasRenderingContext2D.prototype.roundRect) {
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                if (w < 2 * r) r = w / 2;
-                if (h < 2 * r) r = h / 2;
-                this.moveTo(x + r, y);
-                this.arcTo(x + w, y, x + w, y + h, r);
-                this.arcTo(x + w, y + h, x, y + h, r);
-                this.arcTo(x, y + h, x, y, r);
-                this.arcTo(x, y, x + w, y, r);
-                this.closePath();
-                return this;
-            }
         }
 
         function shadeColor(color, percent) {
             let num = parseInt(color.slice(1), 16),
                 amt = Math.round(2.55 * percent),
-                R = (num >> 16) + amt,
-                G = (num >> 8 & 0x00FF) + amt,
-                B = (num & 0x0000FF) + amt;
-            return "#" + (0x1000000 + (R < 255 ? R < 0 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 0 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 0 ? 0 : B : 255)).toString(16).slice(1);
+                R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R<255?R<0?0:R:255)*0x10000 + (G<255?G<0?0:G:255)*0x100 + (B<255?B<0?0:B:255)).toString(16).slice(1);
         }
 
-        // 게임 로직
+        // Logic
         function createGrid() { return Array.from({length: ROWS}, () => Array(COLS).fill(0)); }
-
-        function draw() {
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, 0, COLS, ROWS);
-            
-            // 그리드 가이드라인 (희미하게)
-            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-            ctx.lineWidth = 0.02;
-            for(let i=0; i<=COLS; i++) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,ROWS); ctx.stroke(); }
-            for(let i=0; i<=ROWS; i++) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(COLS,i); ctx.stroke(); }
-
-            grid.forEach((row, y) => {
-                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(ctx, x, y, value); });
-            });
-            if (player.matrix && !gameOver) {
-                const ghostY = getGhostPosition();
-                drawMatrix(player.matrix, {x: player.pos.x, y: ghostY}, ctx, true);
-                drawMatrix(player.matrix, player.pos, ctx);
-            }
-        }
-
-        function drawMatrix(matrix, offset, context, isGhost = false) {
-            matrix.forEach((row, y) => {
-                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(context, x + offset.x, y + offset.y, value, isGhost); });
-            });
-        }
-
-        function drawNext() {
-            nextCtx.fillStyle = '#1e293b';
-            nextCtx.fillRect(0, 0, 4, 4);
-            const matrix = player.next;
-            if (!matrix) return;
-            const ox = (4 - matrix[0].length) / 2;
-            const oy = (4 - matrix.length) / 2;
-            drawMatrix(matrix, {x: ox, y: oy}, nextCtx);
-        }
 
         function collide(board, p) {
             const [m, o] = [p.matrix, p.pos];
@@ -350,7 +275,7 @@
 
         function rotate(matrix, dir) {
             for (let y = 0; y < matrix.length; ++y) {
-                for (let x = 0; x < y; ++x) { [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]]; }
+                for (let x = 0; x < y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
             }
             if (dir > 0) matrix.forEach(row => row.reverse());
             else matrix.reverse();
@@ -375,7 +300,6 @@
             resetPlayer();
             sweepGrid();
             updateScore();
-            dropCounter = 0;
         }
 
         function playerMove(dir) {
@@ -398,28 +322,18 @@
             }
         }
 
-        function getGhostPosition() {
-            let ty = player.pos.y;
-            while(!collide(grid, {pos: {x: player.pos.x, y: ty + 1}, matrix: player.matrix})) ty++;
-            return ty;
-        }
-
         function resetPlayer() {
             if (!player.next) player.next = SHAPES[Math.floor(Math.random() * (SHAPES.length - 1)) + 1];
-            player.matrix = player.next;
+            player.matrix = JSON.parse(JSON.stringify(player.next));
             player.next = SHAPES[Math.floor(Math.random() * (SHAPES.length - 1)) + 1];
             player.pos.y = 0;
             player.pos.x = Math.floor(COLS / 2) - Math.floor(player.matrix[0].length / 2);
-            if (collide(grid, player)) handleGameOver();
+            if (collide(grid, player)) {
+                gameOver = true;
+                document.getElementById('overlay').classList.remove('hidden');
+                document.getElementById('start-btn').innerText = 'TRY AGAIN';
+            }
             drawNext();
-        }
-
-        function handleGameOver() {
-            gameOver = true;
-            cancelAnimationFrame(requestId);
-            const overlay = document.getElementById('overlay');
-            overlay.classList.remove('hidden');
-            document.getElementById('start-btn').innerText = 'TRY AGAIN';
         }
 
         function sweepGrid() {
@@ -434,59 +348,86 @@
             }
         }
 
+        function getGhostPosition() {
+            let ty = player.pos.y;
+            while(!collide(grid, {pos: {x: player.pos.x, y: ty + 1}, matrix: player.matrix})) ty++;
+            return ty;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, COLS, ROWS);
+            grid.forEach((row, y) => {
+                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(ctx, x, y, value); });
+            });
+            if (player.matrix && !gameOver) {
+                drawMatrix(player.matrix, {x: player.pos.x, y: getGhostPosition()}, ctx, true);
+                drawMatrix(player.matrix, player.pos, ctx);
+            }
+        }
+
+        function drawMatrix(matrix, offset, context, isGhost = false) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(context, x + offset.x, y + offset.y, value, isGhost); });
+            });
+        }
+
+        function drawNext() {
+            nextCtx.fillStyle = '#1e293b';
+            nextCtx.fillRect(0, 0, 4, 4);
+            if (!player.next) return;
+            const ox = (4 - player.next[0].length) / 2;
+            const oy = (4 - player.next.length) / 2;
+            drawMatrix(player.next, {x: ox, y: oy}, nextCtx);
+        }
+
         function updateScore() { document.getElementById('score-val').innerText = score; }
 
         function update(time = 0) {
             if (gameOver) return;
-            if (!isPaused) {
-                const deltaTime = time - lastTime;
-                lastTime = time;
-                dropCounter += deltaTime;
-                if (dropCounter > dropInterval) playerDrop();
-            } else { lastTime = time; }
+            const deltaTime = time - lastTime;
+            lastTime = time;
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) playerDrop();
             draw();
             requestId = requestAnimationFrame(update);
         }
 
         function startGame() {
-            level = parseInt(document.getElementById('level-select').value);
-            dropInterval = 1000 - (level * 80);
             grid = createGrid();
             score = 0;
             gameOver = false;
-            isPaused = false;
             player.next = null;
             updateScore();
             resetPlayer();
             document.getElementById('overlay').classList.add('hidden');
-            document.getElementById('pause-overlay').classList.add('hidden');
             lastTime = performance.now();
             if (requestId) cancelAnimationFrame(requestId);
             update();
         }
 
-        // 입력 제어
+        // Inputs
         document.addEventListener('keydown', e => {
             if (gameOver) return;
-            switch(e.key) {
-                case 'ArrowLeft': playerMove(-1); break;
-                case 'ArrowRight': playerMove(1); break;
-                case 'ArrowDown': playerDrop(); break;
-                case 'ArrowUp': playerRotate(1); break;
-                case ' ': e.preventDefault(); playerHardDrop(); break;
-                case 'p': case 'P': isPaused = !isPaused; document.getElementById('pause-overlay').classList.toggle('hidden', !isPaused); break;
-            }
+            if (e.key === 'ArrowLeft') playerMove(-1);
+            if (e.key === 'ArrowRight') playerMove(1);
+            if (e.key === 'ArrowDown') playerDrop();
+            if (e.key === 'ArrowUp') playerRotate(1);
+            if (e.key === ' ') { e.preventDefault(); playerHardDrop(); }
         });
 
-        const touchOpts = { passive: false };
-        document.getElementById('ctrl-left').addEventListener('touchstart', (e) => { e.preventDefault(); playerMove(-1); }, touchOpts);
-        document.getElementById('ctrl-right').addEventListener('touchstart', (e) => { e.preventDefault(); playerMove(1); }, touchOpts);
-        document.getElementById('ctrl-rotate').addEventListener('touchstart', (e) => { e.preventDefault(); playerRotate(1); }, touchOpts);
-        document.getElementById('ctrl-down').addEventListener('touchstart', (e) => { e.preventDefault(); playerDrop(); }, touchOpts);
-        document.getElementById('ctrl-drop').addEventListener('touchstart', (e) => { e.preventDefault(); playerHardDrop(); }, touchOpts);
-        document.getElementById('start-btn').addEventListener('click', startGame);
+        const addControl = (id, fn) => {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameOver) fn(); }, {passive: false});
+        };
 
-        resize();
+        addControl('ctrl-left', () => playerMove(-1));
+        addControl('ctrl-right', () => playerMove(1));
+        addControl('ctrl-down', () => playerDrop());
+        addControl('ctrl-rotate', () => playerRotate(1));
+        addControl('ctrl-drop', () => playerHardDrop());
+
+        document.getElementById('start-btn').onclick = startGame;
         draw();
     </script>
 </body>
