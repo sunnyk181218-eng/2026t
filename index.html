@@ -2,18 +2,23 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute Candy Tetris</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dice Tris - 자연과생명의공존 느티나무-sunny</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Jua&display=swap');
         
+        :root {
+            --bg-color: #0f172a;
+        }
+
         body {
-            background-color: #1e1b4b; /* 진한 인디고 배경 */
+            background-color: var(--bg-color);
             color: #f8fafc;
-            font-family: 'Nanum Gothic', sans-serif;
+            font-family: 'Jua', sans-serif;
             overflow: hidden;
             touch-action: none;
+            user-select: none;
         }
 
         .title-font {
@@ -21,107 +26,138 @@
         }
 
         #game-canvas {
-            border: 8px solid #312e81;
+            border: 6px solid #1e293b;
             border-radius: 12px;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.4);
-            background-color: rgba(30, 27, 75, 0.95);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            background: #1e293b;
+            display: block;
         }
 
-        .next-canvas {
-            border: 4px solid #312e81;
-            border-radius: 8px;
-            background-color: rgba(30, 27, 75, 0.8);
-        }
-
-        .info-panel {
-            background: linear-gradient(135deg, rgba(55, 48, 163, 0.5), rgba(79, 70, 229, 0.2));
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
         }
 
-        .controls-hint {
-            font-size: 0.85rem;
-            color: #a5b4fc;
+        .char-btn {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            aspect-ratio: 1/1;
+            border: 2px solid transparent;
+        }
+        .char-btn:hover { transform: translateY(-2px); }
+        .char-btn.active { 
+            background: #ec4899; 
+            border-color: #fce7f3;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
         }
 
-        #overlay {
-            border-radius: 8px;
+        .ctrl-btn:active {
+            transform: scale(0.95);
+            background-color: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
+<body class="flex flex-col items-center min-h-screen p-2 md:p-4">
 
-    <div class="flex flex-col md:flex-row gap-8 items-start justify-center w-full max-w-4xl">
-        <!-- 게임 보드 -->
-        <div class="relative group">
-            <canvas id="game-canvas"></canvas>
-            
-            <!-- 시작/게임오버 오버레이 -->
-            <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-indigo-950/85 transition-opacity z-10">
-                <h1 id="overlay-text" class="text-5xl font-bold mb-8 title-font text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500 tracking-tighter text-center">CANDY TRIS</h1>
-                <button id="start-btn" class="px-10 py-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white rounded-full font-bold text-2xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-rose-900/40">
-                    PLAY NOW
-                </button>
+    <!-- Header: 요청에 따라 작고 단색으로 수정 -->
+    <header class="text-center mb-6 w-full">
+        <p class="text-slate-500 text-[11px] font-medium tracking-tight">
+            자연과생명의 공존 느티나무-sunny
+        </p>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-4 items-center lg:items-start justify-center w-full max-w-4xl">
+        
+        <!-- Stats -->
+        <div class="flex flex-row lg:flex-col gap-2 w-full lg:w-32 order-2 lg:order-1">
+            <div class="glass-panel p-2 flex-1 text-center">
+                <p class="text-[9px] text-slate-500 uppercase mb-1">Score</p>
+                <p id="score-val" class="text-lg font-bold text-cyan-400 title-font">0</p>
+            </div>
+            <div class="glass-panel p-2 flex-1 text-center">
+                <p class="text-[9px] text-slate-500 uppercase mb-1">Level</p>
+                <select id="level-select" class="bg-transparent text-pink-400 font-bold text-sm outline-none w-full text-center">
+                    <option value="1">Lvl 1</option>
+                    <option value="3">Lvl 3</option>
+                    <option value="5">Lvl 5</option>
+                    <option value="7">Lvl 7</option>
+                    <option value="10">Lvl 10</option>
+                </select>
             </div>
         </div>
 
-        <!-- 사이드바 정보 -->
-        <div class="flex flex-col gap-5 min-w-[180px]">
-            <div class="info-panel p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
-                <p class="text-xs font-bold text-indigo-300 mb-2 uppercase tracking-widest">Next Piece</p>
-                <div class="flex justify-center">
-                    <canvas id="next-canvas" class="next-canvas" width="100" height="100"></canvas>
-                </div>
+        <!-- Main Canvas -->
+        <div class="relative order-1 lg:order-2">
+            <canvas id="game-canvas"></canvas>
+            
+            <!-- Start Overlay -->
+            <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center glass-panel bg-slate-900/95 z-20 p-6">
+                <h1 class="text-3xl font-black mb-2 title-font text-white tracking-tighter">DICE TRIS</h1>
+                <p class="text-slate-400 text-xs mb-4">Choose your dice character</p>
+                
+                <div class="grid grid-cols-5 gap-2 mb-6" id="char-grid"></div>
+                
+                <button id="start-btn" class="w-full py-3 bg-white text-slate-900 rounded-xl font-bold text-sm hover:bg-cyan-400 transition-colors">
+                    START PLAYING
+                </button>
             </div>
 
-            <div class="info-panel p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
-                <p class="text-xs font-bold text-indigo-300 mb-1 uppercase tracking-widest">Score</p>
-                <p id="score-val" class="text-3xl font-bold text-cyan-300 title-font">0</p>
+            <div id="pause-overlay" class="hidden absolute inset-0 flex items-center justify-center glass-panel bg-slate-900/40 z-10">
+                <p class="text-2xl font-bold text-white">PAUSED</p>
             </div>
+        </div>
 
-            <div class="info-panel p-5 rounded-2xl border border-indigo-500/30 shadow-lg">
-                <p class="text-xs font-bold text-indigo-300 mb-1 uppercase tracking-widest">Level</p>
-                <p id="level-val" class="text-3xl font-bold text-pink-400 title-font">1</p>
+        <!-- Next & Info -->
+        <div class="flex flex-row lg:flex-col gap-2 w-full lg:w-32 order-3">
+            <div class="glass-panel p-3 flex-1 flex flex-col items-center justify-center min-h-[100px]">
+                <p class="text-[9px] text-slate-500 uppercase mb-2">Next</p>
+                <canvas id="next-canvas" width="60" height="60"></canvas>
             </div>
-
-            <div class="hidden md:block controls-hint space-y-3 text-left bg-indigo-900/20 p-4 rounded-xl">
-                <div class="flex items-center gap-2"><span class="w-4 h-4 bg-cyan-500 rounded-sm"></span> <p>방향키: 이동/회전</p></div>
-                <div class="flex items-center gap-2"><span class="w-4 h-4 bg-pink-500 rounded-sm"></span> <p>엔터: 하드 드롭</p></div>
-                <div class="flex items-center gap-2"><span class="w-4 h-4 bg-amber-400 rounded-sm"></span> <p>P: 일시정지</p></div>
+            <div class="hidden lg:block glass-panel p-3 flex-1 text-[10px] text-slate-400">
+                <p class="text-white mb-1">KEYS</p>
+                <p>Arrows: Move</p>
+                <p>Space: Drop</p>
             </div>
         </div>
     </div>
 
-    <!-- 모바일 컨트롤 -->
-    <div class="grid grid-cols-3 gap-3 mt-8 md:hidden w-full max-w-xs">
-        <button id="ctrl-left" class="bg-indigo-700/50 p-5 rounded-2xl active:bg-indigo-500 flex justify-center items-center shadow-lg border border-indigo-400/20">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+    <!-- Mobile Controls -->
+    <div class="grid grid-cols-3 gap-2 mt-4 lg:hidden w-full max-w-xs px-2 order-4">
+        <button id="ctrl-left" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2"/></svg>
         </button>
-        <button id="ctrl-rotate" class="bg-pink-600/50 p-5 rounded-2xl active:bg-pink-500 flex justify-center items-center shadow-lg border border-pink-400/20">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <button id="ctrl-rotate" class="ctrl-btn h-12 glass-panel flex justify-center items-center bg-white/5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-width="2"/></svg>
         </button>
-        <button id="ctrl-right" class="bg-indigo-700/50 p-5 rounded-2xl active:bg-indigo-500 flex justify-center items-center shadow-lg border border-indigo-400/20">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <button id="ctrl-right" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2"/></svg>
         </button>
-        <div class="col-span-3">
-            <button id="ctrl-drop" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 p-4 rounded-2xl active:from-cyan-500 active:to-blue-500 font-bold text-lg shadow-lg border border-cyan-400/20 uppercase tracking-widest">Hard Drop</button>
-        </div>
+        <button id="ctrl-down" class="ctrl-btn h-12 glass-panel flex justify-center items-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2"/></svg>
+        </button>
+        <button id="ctrl-drop" class="ctrl-btn col-span-2 h-12 bg-white text-slate-900 rounded-xl font-bold text-xs uppercase tracking-tighter">
+            HARD DROP
+        </button>
     </div>
 
     <script>
         const COLS = 10;
         const ROWS = 20;
-        const BLOCK_SIZE = 30;
+        const CHARACTERS = ["😊", "⭐", "🔥", "💎", "🍀", "👻", "🍎", "⚡", "👑", "⚽"];
+        let selectedChar = CHARACTERS[0];
 
-        // 선명한 캔디 컬러 팔레트
         const COLORS = [
             null,
-            '#22d3ee', // I - 시안
-            '#818cf8', // J - 인디고/라벤더
-            '#fb923c', // L - 오렌지
-            '#facc15', // O - 옐로우
-            '#4ade80', // S - 민트
-            '#c084fc', // T - 퍼플
-            '#fb7185'  // Z - 로즈
+            '#ef4444', // Red
+            '#3b82f6', // Blue
+            '#10b981', // Green
+            '#f59e0b', // Yellow
+            '#8b5cf6', // Purple
+            '#ec4899', // Pink
+            '#06b6d4'  // Cyan
         ];
 
         const SHAPES = [
@@ -140,152 +176,167 @@
         const nextCanvas = document.getElementById('next-canvas');
         const nextCtx = nextCanvas.getContext('2d');
         
-        canvas.width = COLS * BLOCK_SIZE;
-        canvas.height = ROWS * BLOCK_SIZE;
-        ctx.scale(BLOCK_SIZE, BLOCK_SIZE);
-        nextCtx.scale(25, 25);
-
-        let grid = createGrid();
+        let grid = [];
         let score = 0;
         let level = 1;
         let gameOver = false;
         let isPaused = false;
-        let requestId = null;
-        let dropCounter = 0;
         let dropInterval = 1000;
+        let dropCounter = 0;
         let lastTime = 0;
+        let requestId = null;
 
-        let player = {
-            pos: {x: 0, y: 0},
-            matrix: null,
-            next: null
-        };
+        let player = { pos: {x: 0, y: 0}, matrix: null, next: null };
 
-        function createGrid() {
-            return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+        // UI 설정
+        const charGrid = document.getElementById('char-grid');
+        CHARACTERS.forEach((char, idx) => {
+            const btn = document.createElement('div');
+            btn.className = `char-btn glass-panel flex items-center justify-center text-lg ${idx === 0 ? 'active' : ''}`;
+            btn.innerText = char;
+            btn.onclick = () => {
+                document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedChar = char;
+            };
+            charGrid.appendChild(btn);
+        });
+
+        function resize() {
+            const containerHeight = window.innerHeight * 0.6;
+            const blockSize = Math.floor(containerHeight / ROWS);
+            canvas.width = blockSize * COLS;
+            canvas.height = blockSize * ROWS;
+            ctx.scale(blockSize, blockSize);
+            nextCtx.setTransform(1,0,0,1,0,0);
+            nextCtx.scale(15, 15);
         }
 
-        function createPiece(type) {
-            return SHAPES[type];
-        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        /**
-         * 둥근 모서리와 광택 효과를 가진 블록 그리기
-         */
-        function drawBlock(context, x, y, colorIndex, isGhost = false) {
-            const r = 0.2; // 둥근 모서리 반지름
+        // [주사위 스타일 블록 드로잉 함수]
+        function drawDiceBlock(context, x, y, colorIndex, isGhost = false) {
             const color = COLORS[colorIndex];
-            
+            const scale = 0.9;
+            const pad = 0.05;
+            const corner = 0.15;
+
             context.save();
-            context.translate(x, y);
-            
-            // 메인 모양 그리기 (둥근 사각형)
-            context.beginPath();
-            context.moveTo(r, 0);
-            context.lineTo(1 - r, 0);
-            context.quadraticCurveTo(1, 0, 1, r);
-            context.lineTo(1, 1 - r);
-            context.quadraticCurveTo(1, 1, 1 - r, 1);
-            context.lineTo(r, 1);
-            context.quadraticCurveTo(0, 1, 0, 1 - r);
-            context.lineTo(0, r);
-            context.quadraticCurveTo(0, 0, r, 0);
-            context.closePath();
-            
+            context.translate(x + pad, y + pad);
+
             if (isGhost) {
-                context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                context.strokeStyle = 'rgba(255, 255, 255, 0.1)';
                 context.lineWidth = 0.05;
-                context.stroke();
-                context.fillStyle = 'rgba(255, 255, 255, 0.05)';
-                context.fill();
+                context.strokeRect(0, 0, scale, scale);
             } else {
-                context.fillStyle = color;
-                context.fill();
-                
-                // 내부 광택(하이라이트) 효과
-                context.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                // 1. 입체적 측면 (Shadow Side)
+                context.fillStyle = shadeColor(color, -30);
                 context.beginPath();
-                context.ellipse(0.3, 0.3, 0.15, 0.1, Math.PI / 4, 0, Math.PI * 2);
+                context.moveTo(scale, corner);
+                context.lineTo(scale, scale - corner);
+                context.quadraticCurveTo(scale, scale, scale - corner, scale);
+                context.lineTo(corner, scale);
+                context.lineTo(0.1, 0.85); // 가상의 깊이감
+                context.lineTo(0.85, 0.85);
+                context.lineTo(0.85, 0.1);
                 context.fill();
 
-                // 테두리 강조
-                context.strokeStyle = 'rgba(0,0,0,0.15)';
-                context.lineWidth = 0.05;
+                // 2. 메인 앞면 (Front Face)
+                context.fillStyle = color;
+                context.strokeStyle = '#000000';
+                context.lineWidth = 0.04;
+
+                const frontSize = 0.85;
+                context.beginPath();
+                context.roundRect(0, 0, frontSize, frontSize, corner);
+                context.fill();
                 context.stroke();
+
+                // 3. 하이라이트 (Top Light)
+                context.beginPath();
+                context.roundRect(0.05, 0.05, frontSize - 0.1, 0.1, corner / 2);
+                context.fillStyle = 'rgba(255,255,255,0.2)';
+                context.fill();
+
+                // 4. 캐릭터 (정면 중앙)
+                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                context.font = '0.45px Jua';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText(selectedChar, frontSize/2, frontSize/2 + 0.05);
             }
-            
             context.restore();
         }
 
+        // 구형 브라우저를 위한 roundRect 폴리필
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            }
+        }
+
+        function shadeColor(color, percent) {
+            let num = parseInt(color.slice(1), 16),
+                amt = Math.round(2.55 * percent),
+                R = (num >> 16) + amt,
+                G = (num >> 8 & 0x00FF) + amt,
+                B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 0 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 0 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 0 ? 0 : B : 255)).toString(16).slice(1);
+        }
+
+        // 게임 로직
+        function createGrid() { return Array.from({length: ROWS}, () => Array(COLS).fill(0)); }
+
         function draw() {
-            // 배경 그리기
-            ctx.fillStyle = '#1e1b4b';
+            ctx.fillStyle = '#1e293b';
             ctx.fillRect(0, 0, COLS, ROWS);
-
-            // 보이지 않는 보조 그리드
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
+            
+            // 그리드 가이드라인 (희미하게)
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
             ctx.lineWidth = 0.02;
-            for(let x=0; x<=COLS; x++) {
-                ctx.moveTo(x, 0); ctx.lineTo(x, ROWS);
-            }
-            for(let y=0; y<=ROWS; y++) {
-                ctx.moveTo(0, y); ctx.lineTo(COLS, y);
-            }
-            ctx.stroke();
+            for(let i=0; i<=COLS; i++) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,ROWS); ctx.stroke(); }
+            for(let i=0; i<=ROWS; i++) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(COLS,i); ctx.stroke(); }
 
-            // 보드 위에 쌓인 블록 그리기
             grid.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        drawBlock(ctx, x, y, value);
-                    }
-                });
+                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(ctx, x, y, value); });
             });
-
-            // 고스트 블록과 플레이어 블록 그리기
             if (player.matrix && !gameOver) {
-                const ghostPos = getGhostPosition();
-                if (ghostPos) {
-                    drawMatrix(player.matrix, ghostPos, ctx, true);
-                }
+                const ghostY = getGhostPosition();
+                drawMatrix(player.matrix, {x: player.pos.x, y: ghostY}, ctx, true);
                 drawMatrix(player.matrix, player.pos, ctx);
             }
         }
 
         function drawMatrix(matrix, offset, context, isGhost = false) {
-            if (!matrix) return;
             matrix.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        drawBlock(context, x + offset.x, y + offset.y, value, isGhost);
-                    }
-                });
+                row.forEach((value, x) => { if (value !== 0) drawDiceBlock(context, x + offset.x, y + offset.y, value, isGhost); });
             });
         }
 
         function drawNext() {
-            nextCtx.fillStyle = '#1e1b4b';
+            nextCtx.fillStyle = '#1e293b';
             nextCtx.fillRect(0, 0, 4, 4);
-            
             const matrix = player.next;
             if (!matrix) return;
-            const offsetX = (4 - matrix[0].length) / 2;
-            const offsetY = (4 - matrix.length) / 2;
-            
-            drawMatrix(matrix, {x: offsetX, y: offsetY}, nextCtx);
+            const ox = (4 - matrix[0].length) / 2;
+            const oy = (4 - matrix.length) / 2;
+            drawMatrix(matrix, {x: ox, y: oy}, nextCtx);
         }
 
         function collide(board, p) {
-            if (!p.matrix) return false;
             const [m, o] = [p.matrix, p.pos];
             for (let y = 0; y < m.length; ++y) {
                 for (let x = 0; x < m[y].length; ++x) {
-                    if (m[y][x] !== 0 && 
-                       (board[y + o.y] === undefined || board[y + o.y][x + o.x] === undefined || 
-                        board[y + o.y][x + o.x] !== 0)) {
-                        return true;
-                    }
+                    if (m[y][x] !== 0 && (board[y + o.y] === undefined || board[y + o.y][x + o.x] === undefined || board[y + o.y][x + o.x] !== 0)) return true;
                 }
             }
             return false;
@@ -293,26 +344,19 @@
 
         function merge(board, p) {
             p.matrix.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        board[y + p.pos.y][x + p.pos.x] = value;
-                    }
-                });
+                row.forEach((value, x) => { if (value !== 0) board[y + p.pos.y][x + p.pos.x] = value; });
             });
         }
 
         function rotate(matrix, dir) {
             for (let y = 0; y < matrix.length; ++y) {
-                for (let x = 0; x < y; ++x) {
-                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-                }
+                for (let x = 0; x < y; ++x) { [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]]; }
             }
             if (dir > 0) matrix.forEach(row => row.reverse());
             else matrix.reverse();
         }
 
         function playerDrop() {
-            if (gameOver || isPaused || !player.matrix) return;
             player.pos.y++;
             if (collide(grid, player)) {
                 player.pos.y--;
@@ -325,10 +369,7 @@
         }
 
         function playerHardDrop() {
-            if (gameOver || isPaused || !player.matrix) return;
-            while(!collide(grid, player)) {
-                player.pos.y++;
-            }
+            while(!collide(grid, player)) player.pos.y++;
             player.pos.y--;
             merge(grid, player);
             resetPlayer();
@@ -338,15 +379,11 @@
         }
 
         function playerMove(dir) {
-            if (gameOver || isPaused || !player.matrix) return;
             player.pos.x += dir;
-            if (collide(grid, player)) {
-                player.pos.x -= dir;
-            }
+            if (collide(grid, player)) player.pos.x -= dir;
         }
 
         function playerRotate(dir) {
-            if (gameOver || isPaused || !player.matrix) return;
             const pos = player.pos.x;
             let offset = 1;
             rotate(player.matrix, dir);
@@ -362,30 +399,18 @@
         }
 
         function getGhostPosition() {
-            if (!player.matrix) return null;
-            const ghost = {
-                pos: { x: player.pos.x, y: player.pos.y },
-                matrix: player.matrix
-            };
-            while(!collide(grid, ghost)) {
-                ghost.pos.y++;
-            }
-            ghost.pos.y--;
-            return ghost.pos;
+            let ty = player.pos.y;
+            while(!collide(grid, {pos: {x: player.pos.x, y: ty + 1}, matrix: player.matrix})) ty++;
+            return ty;
         }
 
         function resetPlayer() {
-            if (!player.next) {
-                player.next = createPiece(Math.floor(Math.random() * 7) + 1);
-            }
+            if (!player.next) player.next = SHAPES[Math.floor(Math.random() * (SHAPES.length - 1)) + 1];
             player.matrix = player.next;
-            player.next = createPiece(Math.floor(Math.random() * 7) + 1);
+            player.next = SHAPES[Math.floor(Math.random() * (SHAPES.length - 1)) + 1];
             player.pos.y = 0;
             player.pos.x = Math.floor(COLS / 2) - Math.floor(player.matrix[0].length / 2);
-
-            if (collide(grid, player)) {
-                handleGameOver();
-            }
+            if (collide(grid, player)) handleGameOver();
             drawNext();
         }
 
@@ -393,102 +418,75 @@
             gameOver = true;
             cancelAnimationFrame(requestId);
             const overlay = document.getElementById('overlay');
-            const overlayText = document.getElementById('overlay-text');
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'auto';
-            overlayText.innerText = 'OH NO!';
-            overlayText.className = "text-5xl font-bold mb-8 title-font text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500 tracking-tighter text-center";
-            document.getElementById('start-btn').innerText = 'REPLAY';
+            overlay.classList.remove('hidden');
+            document.getElementById('start-btn').innerText = 'TRY AGAIN';
         }
 
         function sweepGrid() {
             let rowCount = 1;
             outer: for (let y = grid.length - 1; y > 0; --y) {
-                for (let x = 0; x < grid[y].length; ++x) {
-                    if (grid[y][x] === 0) continue outer;
-                }
+                for (let x = 0; x < grid[y].length; ++x) { if (grid[y][x] === 0) continue outer; }
                 const row = grid.splice(y, 1)[0].fill(0);
                 grid.unshift(row);
                 ++y;
-                score += rowCount * 100;
+                score += rowCount * 10;
                 rowCount *= 2;
-                
-                if (score >= level * 1000) {
-                    level++;
-                    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
-                }
             }
         }
 
-        function updateScore() {
-            document.getElementById('score-val').innerText = score;
-            document.getElementById('level-val').innerText = level;
-        }
+        function updateScore() { document.getElementById('score-val').innerText = score; }
 
         function update(time = 0) {
             if (gameOver) return;
-            
             if (!isPaused) {
                 const deltaTime = time - lastTime;
                 lastTime = time;
-
                 dropCounter += deltaTime;
-                if (dropCounter > dropInterval) {
-                    playerDrop();
-                }
-            } else {
-                lastTime = time;
-            }
-
+                if (dropCounter > dropInterval) playerDrop();
+            } else { lastTime = time; }
             draw();
             requestId = requestAnimationFrame(update);
         }
 
         function startGame() {
+            level = parseInt(document.getElementById('level-select').value);
+            dropInterval = 1000 - (level * 80);
             grid = createGrid();
             score = 0;
-            level = 1;
-            dropInterval = 1000;
             gameOver = false;
             isPaused = false;
             player.next = null;
             updateScore();
             resetPlayer();
-            
-            const overlay = document.getElementById('overlay');
-            overlay.style.opacity = '0';
-            overlay.style.pointerEvents = 'none';
-
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
             lastTime = performance.now();
             if (requestId) cancelAnimationFrame(requestId);
             update();
         }
 
-        // 입력 컨트롤
-        document.addEventListener('keydown', event => {
+        // 입력 제어
+        document.addEventListener('keydown', e => {
             if (gameOver) return;
-            if (event.keyCode === 37) playerMove(-1); // 왼쪽
-            else if (event.keyCode === 39) playerMove(1);  // 오른쪽
-            else if (event.keyCode === 40) playerDrop();   // 아래
-            else if (event.keyCode === 38) playerRotate(1); // 회전
-            else if (event.keyCode === 32 || event.keyCode === 13) { // 스페이스/엔터
-                event.preventDefault(); 
-                playerHardDrop();
-            }
-            else if (event.keyCode === 80) { // P (일시정지)
-                isPaused = !isPaused;
+            switch(e.key) {
+                case 'ArrowLeft': playerMove(-1); break;
+                case 'ArrowRight': playerMove(1); break;
+                case 'ArrowDown': playerDrop(); break;
+                case 'ArrowUp': playerRotate(1); break;
+                case ' ': e.preventDefault(); playerHardDrop(); break;
+                case 'p': case 'P': isPaused = !isPaused; document.getElementById('pause-overlay').classList.toggle('hidden', !isPaused); break;
             }
         });
 
-        // 모바일 컨트롤 이벤트
-        document.getElementById('ctrl-left').addEventListener('click', () => playerMove(-1));
-        document.getElementById('ctrl-right').addEventListener('click', () => playerMove(1));
-        document.getElementById('ctrl-rotate').addEventListener('click', () => playerRotate(1));
-        document.getElementById('ctrl-drop').addEventListener('click', () => playerHardDrop());
-
+        const touchOpts = { passive: false };
+        document.getElementById('ctrl-left').addEventListener('touchstart', (e) => { e.preventDefault(); playerMove(-1); }, touchOpts);
+        document.getElementById('ctrl-right').addEventListener('touchstart', (e) => { e.preventDefault(); playerMove(1); }, touchOpts);
+        document.getElementById('ctrl-rotate').addEventListener('touchstart', (e) => { e.preventDefault(); playerRotate(1); }, touchOpts);
+        document.getElementById('ctrl-down').addEventListener('touchstart', (e) => { e.preventDefault(); playerDrop(); }, touchOpts);
+        document.getElementById('ctrl-drop').addEventListener('touchstart', (e) => { e.preventDefault(); playerHardDrop(); }, touchOpts);
         document.getElementById('start-btn').addEventListener('click', startGame);
 
-        // 초기 화면 그리기
+        resize();
         draw();
     </script>
 </body>
